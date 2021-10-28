@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>DZ_REACT_005</title>
+    <link href="style.css" rel="stylesheet"/>
+</head>
+<body>
+    <script crossorigin src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <div id="app"></div>
+
+    <!-- С использованием api Pixabay реализовать страницу для поиска на сайте изображений. Предоставить пользователю фильтра
+    - Категорий
+    - Количества комментариев
+    - Количества лайков
+
+    Так же дать возможность указывать какое количество картинок отображать и в каком размере -->
+
+    <!-- Задание тоже? Пофиксил и перезалил. -->
+
+    <script type="text/babel">
+        class MyComponent extends React.Component{
+            constructor(props){
+                super(props);
+                this.state = { hits: [] };
+                this.state.q = "boobs";
+                this.state.category = "";
+                this.state.comments_from = 0;
+                this.state.comments_to = 0;
+                this.state.likes_from = 0;
+                this.state.likes_to = 0;
+                this.state.page = 1;
+                this.state.per_page = 10;
+                this.state.width = 100;
+                this.state.count_pages = 0;
+
+                this.handleSubmit = this.handleSubmit.bind(this);
+            }
+
+            componentDidMount(){
+                this.getHits();
+            }
+
+            getHits(){
+                fetch("https://pixabay.com/api/?" + 
+                "key=23798924-17f42c690434b5dec74a9c318" + 
+                "&image_type=photo" + 
+                "&q=" + this.state.q +
+                "&category=" + this.state.category)
+                .then(response => response.json())
+                .then(data => fetch("https://pixabay.com/api/?" + 
+                    "key=23798924-17f42c690434b5dec74a9c318" + 
+                    "&image_type=photo" + 
+                    "&q=" + this.state.q +
+                    "&category=" + this.state.category +
+                    "&per_page=" + data.totalHits)
+                    .then(response => response.json())
+                    .then(data => data.hits)
+                    .then(hits => {this.setState({hits: hits })}))
+                .catch(err => console.log(err));
+            }
+
+            getImages(){
+                let arr = Array();
+                this.state.hits.forEach(hit => {
+                    if((hit.likes >= this.state.likes_from && (hit.likes <= this.state.likes_to || this.state.likes_to == 0)) &&
+                    hit.comments  >= this.state.comments_from && (hit.comments <= this.state.comments_to || this.state.comments_to == 0)){
+                        arr.push(
+                            <div class="card">
+                                <label>Category: {hit.category}</label>
+                                <br/>
+                                <label>Comments: {hit.comments}</label>
+                                <br/>
+                                <label>Likes: {hit.likes}</label>
+                                <br/>
+                                <br/>
+                                <img style={{width: this.state.width + "px"}} src={hit.previewURL} />
+                            </div>)
+                    }
+                })
+                this.state.count_pages = Math.floor(arr.length / this.state.per_page) + 1;
+
+                let start = (this.state.page-1)*this.state.per_page;
+                arr = arr.slice(start, start+ this.state.per_page);
+                return arr;
+            }            
+
+            handleSubmit(event) {
+                this.getHits();
+                if(event.target.search.value !="")
+                    this.setState({q: event.target.search.value})
+                if(event.target.category.value !="")
+                    this.setState({category: event.target.category.value})
+                if(event.target.comments_from.value !="")
+                    this.setState({comments_from: event.target.comments_from.value})
+                if(event.target.comments_to.value !="")
+                    this.setState({comments_to: event.target.comments_to.value})
+                if(event.target.likes_from.value !="")
+                    this.setState({likes_from: event.target.likes_from.value})
+                if(event.target.likes_to.value !="")
+                    this.setState({likes_to: event.target.likes_to.value})
+                if(event.target.per_page.value !="")
+                    this.setState({per_page: event.target.per_page.value})
+                if(event.target.width.value !="")
+                    this.setState({width: event.target.width.value})
+                event.preventDefault();
+            }
+
+            render(){
+                return (
+                    <div class = "page">
+                        <div class="search">
+                            <form onSubmit={this.handleSubmit}>
+                            <label>Search:
+                                <input type="text" placeholder="Enter your request" name="search"/>
+                            </label>
+                            <br/>
+                            <label>Category
+                                <input type="text" placeholder="Enter your category" name="category"/>
+                            </label>
+                            <br/>
+                            <label>Number of comments
+                                <input type="text" placeholder="from" name="comments_from"/>
+                                <input type="text" placeholder="to" name="comments_to"/>
+                            </label>
+                            <br/>
+                            <label>Number of likes
+                                <input type="text" placeholder="from" name="likes_from"/>
+                                <input type="text" placeholder="to" name="likes_to"/>
+                            </label>
+                            <br/>
+                            <label>Per page:
+                                <input type="text" placeholder="Enter per page" name="per_page"/>
+                            </label>
+                            <br/>
+                            <label>Wight img:
+                                <input type="text" placeholder="Enter width img" name="width"/>
+                            </label>
+                            <br/>
+                            <input type="submit" value="Send" />
+                            </form>
+                        </div>
+
+                        <div class = "images">
+                            {this.getImages()}
+                        </div>
+
+                        <div class="orientation">
+                            <button class = 'button'
+                                onClick = {() => {if (this.state.page > 1){this.setState({page: this.state.page - 1})}}}> pref </button>
+                            <span class="span_1">page: {this.state.page}</span>
+                            <button class = 'button'
+                                onClick = {() => {if(this.state.page < this.state.count_pages){this.setState({page: this.state.page + 1})}}}> next </button>
+                        </div>
+                    </div>
+                );
+            }
+        }
+
+        ReactDOM.render(
+            <MyComponent />,
+            document.getElementById('app')
+        );
+    </script>
+</body>
+</html>
